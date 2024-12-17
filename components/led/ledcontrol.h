@@ -6,14 +6,17 @@
 class LedControl 
 {
 public:
-    enum Mode { Default = 0, Output, PWM };
+    enum PinMode { Default = 0, Output, PWM };
 
     virtual void setPin(uint8_t pin) = 0;
-    virtual void setMode(Mode mode) = 0;
-    virtual void configure() = 0;
+    virtual void setMode(PinMode mode) = 0;
+
+    virtual void setDuty(uint8_t duty) = 0;
+
+    virtual bool configure() = 0;
 
     virtual uint8_t pin() = 0;
-    virtual Mode mode() = 0;
+    virtual PinMode mode() = 0;
 
     virtual void turnOn() = 0;
     virtual void turnOff() = 0;

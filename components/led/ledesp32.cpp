@@ -1,51 +1,45 @@
 #include "ledesp32.h"
-
-#include "esp_log.h"
+#include <cmath>
 
 LedEsp32::LedEsp32()
 {
-    m_tag = "LedEsp32";
-}
+    m_pinMode = Default;
 
-LedEsp32::LedEsp32(uint8_t pin, Mode mode)
-{
-    m_tag = "LedEsp32";
-
-    m_pin = static_cast<gpio_num_t>(pin);
-    m_mode = mode;
-
-    ESP_LOGI(m_tag.c_str(), "Setting pin %d, mode %d", pin, mode);
+    // PWM default settings
+    m_ledMode = LEDC_LOW_SPEED_MODE;
+    m_ledChannel = LEDC_CHANNEL_0;
+    m_ledTimer = LEDC_TIMER_0;
+    m_ledTimerResolution = LEDC_TIMER_13_BIT;
+    m_ledTimerFreq = 5000;                      // 5Khz
 }
 
 void LedEsp32::setPin(uint8_t pin)
 {
-    ESP_LOGI(m_tag.c_str(), "Setting pin %d", pin);
     m_pin = static_cast<gpio_num_t>(pin);
 }
 
-void LedEsp32::setMode(Mode mode)
+void LedEsp32::setMode(PinMode mode)
 {
-    ESP_LOGI(m_tag.c_str(), "Setting mode %d", mode);
-    m_mode = mode;
+    m_pinMode = mode;
 }
 
-void LedEsp32::configure()
+void LedEsp32::setDuty(uint8_t duty)
 {
-    ESP_LOGI(m_tag.c_str(), "Configuring...");
+    ledc_set_duty(m_ledMode, m_ledChannel, calcDuty(duty));
+    ledc_update_duty(m_ledMode, m_ledChannel);
+}
 
-    switch (m_mode)
+bool LedEsp32::configure()
+{
+    switch (m_pinMode)
     {
         case Default:
         case Output:
-            configureOutputMode();
-            break;
+            return configureOutputMode();
         case PWM:
-            configurePWMMode();
-            break;
-        
+            return configurePWMMode();
         default:
-            configureOutputMode();
-            break;
+            return configureOutputMode();
     }
 }
 
@@ -54,9 +48,9 @@ uint8_t LedEsp32::pin()
     return m_pin;
 }
 
-LedControl::Mode LedEsp32::mode()
+LedControl::PinMode LedEsp32::mode()
 {
-    return m_mode;
+    return m_pinMode;
 }
 
 void LedEsp32::turnOn()
@@ -76,12 +70,64 @@ void LedEsp32::toggle()
     gpio_set_level(m_pin, level);
 }
 
-void LedEsp32::configureOutputMode()
+bool LedEsp32::configureOutputMode()
 {
-    gpio_set_direction(m_pin, GPIO_MODE_INPUT_OUTPUT);   
+    if (gpio_set_direction(m_pin, GPIO_MODE_INPUT_OUTPUT) != ESP_OK)
+    {
+        return false;
+    } 
+
     turnOff();
+
+    return true;
 }
 
-void LedEsp32::configurePWMMode()
+bool LedEsp32::configurePWMMode()
 {
+    ledc_timer_config_t ledc_timer = {
+        .speed_mode       = m_ledMode,
+        .duty_resolution  = m_ledTimerResolution,
+        .timer_num        = m_ledTimer,            
+        .freq_hz          = m_ledTimerFreq,
+        .clk_cfg          = LEDC_AUTO_CLK
+    };
+
+    if (ledc_timer_config(&ledc_timer) != ESP_OK)
+    {   
+        return false;
+    }
+
+    ledc_channel_config_t ledc_channel = {
+        .gpio_num       = m_pin,
+        .speed_mode     = m_ledMode,
+        .channel        = m_ledChannel,
+        .intr_type      = LEDC_INTR_DISABLE,
+        .timer_sel      = m_ledTimer,
+        .duty           = 0, 
+        .hpoint         = 0
+    };
+
+    if (ledc_channel_config(&ledc_channel) != ESP_OK)
+    {
+        return false;
+    }
+
+    setDuty(0);
+
+    return true;
+}
+
+uint32_t LedEsp32::calcDuty(uint8_t duty)
+{
+    if (duty == 0)
+    {
+        return duty;
+    }
+
+    duty = duty > 100 ? 100 : duty;
+
+    uint32_t range = std::pow(2.0, m_ledTimerResolution);
+    float multiplier = static_cast<float>(duty / 100.0);
+
+    return static_cast<uint32_t>(range * multiplier);
 }
