@@ -3,7 +3,7 @@
 
 LedEsp32::LedEsp32()
 {
-    m_pinMode = Default;
+    m_pinMode = Output;
 
     // PWM default settings
     m_ledMode = LEDC_LOW_SPEED_MODE;
@@ -33,7 +33,6 @@ bool LedEsp32::configure()
 {
     switch (m_pinMode)
     {
-        case Default:
         case Output:
             return configureOutputMode();
         case PWM:
@@ -89,7 +88,8 @@ bool LedEsp32::configurePWMMode()
         .duty_resolution  = m_ledTimerResolution,
         .timer_num        = m_ledTimer,            
         .freq_hz          = m_ledTimerFreq,
-        .clk_cfg          = LEDC_AUTO_CLK
+        .clk_cfg          = LEDC_AUTO_CLK,
+        .deconfigure      = false
     };
 
     if (ledc_timer_config(&ledc_timer) != ESP_OK)
@@ -104,7 +104,8 @@ bool LedEsp32::configurePWMMode()
         .intr_type      = LEDC_INTR_DISABLE,
         .timer_sel      = m_ledTimer,
         .duty           = 0, 
-        .hpoint         = 0
+        .hpoint         = 0,
+        .flags          = { 0 }
     };
 
     if (ledc_channel_config(&ledc_channel) != ESP_OK)
