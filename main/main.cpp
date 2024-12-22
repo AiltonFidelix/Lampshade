@@ -1,13 +1,26 @@
 #include "main.h"
+
+#include "esp_log.h"
+#include "nvs_flash.h"
+
 #include "wififactory.h"
 #include "ledesp32.h"
-#include "esp_log.h"
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
 void app_main(void)
 {
+    esp_err_t ret = nvs_flash_init();
+
+    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) 
+    {
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        ret = nvs_flash_init();
+    }
+
+    ESP_ERROR_CHECK(ret);
+
     WiFi *wifi = WiFiFactory::getMode(WiFi::AP);
 
     if (wifi)
@@ -17,12 +30,10 @@ void app_main(void)
 
     LedEsp32 led;
     led.setPin(GPIO_NUM_8);
-    led.setMode(LedControl::PWM);
+    led.setMode(Led::PWM);
     // led.setMode(LedControl::Output);
     led.configure();
 
-
-    ESP_LOGI("MAIN", "Hello from esp32c3 RISC-V");
     uint8_t duty = 0;
 
     while (true)

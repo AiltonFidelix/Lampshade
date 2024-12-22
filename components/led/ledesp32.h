@@ -1,12 +1,12 @@
 #ifndef __LEDESP32_H
 #define __LEDESP32_H
 
-#include "ledcontrol.h"
+#include "led.h"
 #include "driver/gpio.h"
 #include "driver/ledc.h"
 #include <iostream>
 
-class LedEsp32 : public LedControl
+class LedEsp32 : public Led
 {
 public:
     LedEsp32();

@@ -3,7 +3,7 @@
 
 #include <cinttypes>
 
-class LedControl 
+class Led
 {
 public:
     enum PinMode { Output = 0, PWM };

@@ -18,10 +18,10 @@ def main() -> None:
         if ret == 0:
             ret = command("idf.py monitor")
         else:
-            print("\033[31mFalhar ao gravar código na flash!")
+            print("\033[31m------> Flashing failed!")
 
     else:
-        print("\033[31mFalha ao compilar código!")
+        print("\033[31m------> Build failed!")
 
 
 if __name__ == "__main__":

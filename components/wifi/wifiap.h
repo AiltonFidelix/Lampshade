@@ -7,12 +7,29 @@
 #include "freertos/task.h"
 #include "freertos/event_groups.h"
 
+#include "esp_log.h"
+#include "esp_netif.h"
+#include "esp_wifi.h"
+#include "esp_mac.h"
+#include "esp_event.h"
+#include "lwip/netdb.h"
+
 #include "wifi.h"
 
 class WiFiAP : public WiFi
 {
     using Monitor = struct {
-        bool *connected;
+        bool connected;
+        bool ssidHidden;
+
+        uint8_t channel;
+        uint8_t maxConnections;
+        uint16_t beaconInterval;
+
+        std::string tag;
+        std::string ssid;
+        std::string password;
+
         TaskHandle_t taskHandle;
         EventGroupHandle_t eventGroup;
     };
@@ -21,11 +38,10 @@ public:
     WiFiAP();
     ~WiFiAP();
 
-    void start() override;
+    bool start() override;
     void stop() override;
     
-    void setSSID(const std::string &ssid) override;
-    void setPassword(const std::string &password) override;
+    void setCredentials(const std::string &ssid, const std::string &password) override;
     void setChannel(uint8_t channel);
     void setMaxConnections(uint8_t max);
     void setBeaconInterval(uint16_t interval);
@@ -36,25 +52,25 @@ public:
     Mode mode() override;
 
 private:
-    void initSoftAP();
-    static void wifiAPTask(void *pvParameters);
+    static void wifiEventHandler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
+    static void initAP(Monitor *monitor);
+    static void initEventHandler(Monitor *monitor);
     static void monitorTask(void *pvParameters);
 
 private:
-    static int m_typeId;
-    bool m_connected;
-    bool m_ssidHidden;
+    // TODO: change to static variables
+    // bool m_connected;
+    // bool m_ssidHidden;
 
-    uint8_t m_channel;
-    uint8_t m_maxConnections;
-    uint16_t m_beaconInterval;
+    // uint8_t m_channel;
+    // uint8_t m_maxConnections;
+    // uint16_t m_beaconInterval;
 
-    std::string m_tag;
-    std::string m_ssid;
-    std::string m_password;
+    // std::string m_tag;
+    // std::string m_ssid;
+    // std::string m_password;
 
-    TaskHandle_t m_monitorHandle;
-    EventGroupHandle_t m_monitorGroup;
+    // TaskHandle_t m_monitorHandle;
 
     Monitor *m_monitor;
 };

@@ -1,7 +1,7 @@
 #include "wififactory.h"
 #include "wifiap.h"
 
-WiFi *WiFiFactory::getMode(WiFi::Mode mode)
+WiFi *WiFiFactory::getMode(WiFi::Mode mode, std::string ssid, std::string pass)
 {
     switch (mode)
     {

@@ -47,7 +47,7 @@ uint8_t LedEsp32::pin()
     return m_pin;
 }
 
-LedControl::PinMode LedEsp32::mode()
+Led::PinMode LedEsp32::mode()
 {
     return m_pinMode;
 }
