@@ -18,27 +18,11 @@
 
 class WiFiAP : public WiFi
 {
-    using Monitor = struct {
-        bool connected;
-        bool ssidHidden;
-
-        uint8_t channel;
-        uint8_t maxConnections;
-        uint16_t beaconInterval;
-
-        std::string tag;
-        std::string ssid;
-        std::string password;
-
-        TaskHandle_t taskHandle;
-        EventGroupHandle_t eventGroup;
-    };
-
 public:
     WiFiAP();
     ~WiFiAP();
 
-    bool start() override;
+    void start() override;
     void stop() override;
     
     void setCredentials(const std::string &ssid, const std::string &password) override;
@@ -53,26 +37,22 @@ public:
 
 private:
     static void wifiEventHandler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
-    static void initAP(Monitor *monitor);
-    static void initEventHandler(Monitor *monitor);
+    static void initAP(wifi_config_t *wifiConfig);
+    static void initEventHandler();
     static void monitorTask(void *pvParameters);
 
 private:
-    // TODO: change to static variables
-    // bool m_connected;
-    // bool m_ssidHidden;
+    static std::string m_tag;
+    static bool m_connected;
 
-    // uint8_t m_channel;
-    // uint8_t m_maxConnections;
-    // uint16_t m_beaconInterval;
+    static uint32_t m_startedBit;
+    static uint32_t m_connectedBit;
+    static uint32_t m_failedBit;
 
-    // std::string m_tag;
-    // std::string m_ssid;
-    // std::string m_password;
-
-    // TaskHandle_t m_monitorHandle;
-
-    Monitor *m_monitor;
+    static TaskHandle_t m_taskHandle;
+    static EventGroupHandle_t m_eventGroup;
+  
+    wifi_config_t m_wifiConfig;
 };
 
 #endif
