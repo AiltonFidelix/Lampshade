@@ -22,6 +22,7 @@ void app_main(void)
     ESP_ERROR_CHECK(ret);
 
     WiFi *wifi = WiFiFactory::getMode(WiFi::AP);
+    // WiFi *wifi = WiFiFactory::getMode(WiFi::STA, "", "");
 
     if (wifi)
     {
@@ -31,7 +32,6 @@ void app_main(void)
     LedEsp32 led;
     led.setPin(GPIO_NUM_8);
     led.setMode(Led::PWM);
-    // led.setMode(LedControl::Output);
     led.configure();
 
     uint8_t duty = 0;
@@ -42,6 +42,6 @@ void app_main(void)
         led.setDuty(duty);
         duty = (duty > 100) ? 0 : duty;
 
-        vTaskDelay(pdMS_TO_TICKS(80));
+        vTaskDelay(pdMS_TO_TICKS(100));
     }
 }

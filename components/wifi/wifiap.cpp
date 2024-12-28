@@ -1,17 +1,12 @@
 #include "wifiap.h"
 
 std::string WiFiAP::m_tag = "WiFiAP";
-bool WiFiAP::m_connected = false;
-
-uint32_t WiFiAP::m_startedBit = BIT0;
-uint32_t WiFiAP::m_connectedBit = BIT1;
-uint32_t WiFiAP::m_failedBit = BIT2;
-
-TaskHandle_t WiFiAP::m_taskHandle = nullptr;
-EventGroupHandle_t WiFiAP::m_eventGroup = nullptr;
 
 WiFiAP::WiFiAP()
 {
+    m_netifAp = nullptr;
+    m_connected = false;
+
     setChannel(1);
     setMaxConnections(1);
     setBeaconInterval(100);
@@ -28,40 +23,40 @@ WiFiAP::~WiFiAP()
     stop();
 }
 
-void WiFiAP::start()
+bool WiFiAP::start()
 {
-    if (m_taskHandle)
-    {
-        ESP_LOGI(m_tag.c_str(), "Task has been created, just resuming...");
-        vTaskResume(m_taskHandle);
-    }
-    else
-    {
-        esp_log_level_set("wifi", ESP_LOG_NONE);
+    ESP_LOGI(m_tag.c_str(), "Starting WiFi AP...");
 
-        ESP_LOGI(m_tag.c_str(), "Task hasn't been created, creating...");
+    esp_log_level_set("wifi", ESP_LOG_NONE);
 
-        xTaskCreate(WiFiAP::monitorTask, "monitorTask", WIFI_TASK_STACK, &m_wifiConfig, 5, &m_taskHandle);
+    initEventHandler();
+    initSoftAP();
+
+    if (esp_wifi_start() != ESP_OK)
+    {
+        ESP_LOGE(m_tag.c_str(), "WiFi start failed...");
+        return false;
     }
+
+    m_connected = true;
+
+    return true;
 }
 
 void WiFiAP::stop()
 {
-    if (m_taskHandle)
-    {
-        ESP_LOGI(m_tag.c_str(), "Stoping WiFi task...");
-        esp_wifi_stop();
-        vTaskSuspend(m_taskHandle);
+    ESP_LOGI(m_tag.c_str(), "Stoping WiFi AP...");
 
-        m_taskHandle = nullptr;
+    esp_wifi_stop();
+
+    if (m_netifAp)
+    {
+        esp_netif_destroy_default_wifi(m_netifAp);
+
+        m_netifAp = nullptr;
     }
 
-    if (m_eventGroup)
-    {
-        vEventGroupDelete(m_eventGroup);
-
-        m_eventGroup = nullptr;
-    }
+    m_connected = false;
 }
 
 void WiFiAP::setCredentials(const std::string &ssid, const std::string &password)
@@ -73,9 +68,19 @@ void WiFiAP::setCredentials(const std::string &ssid, const std::string &password
         m_wifiConfig.ap.ssid[i] = ssid[i];
     }
 
+    if (ssid.size() < WIFI_SSID_LEN)
+    {
+        m_wifiConfig.ap.ssid[ssid.size()] = '\0';
+    }
+
     for (size_t i = 0; i < password.size(); i++)
     {
         m_wifiConfig.ap.password[i] = password[i];
+    }
+
+    if (password.size() < WIFI_PASS_LEN)
+    {
+        m_wifiConfig.ap.password[password.size()] = '\0';
     }
 }
 
@@ -109,40 +114,7 @@ WiFi::Mode WiFiAP::mode()
     return Mode::AP;
 }
 
-void WiFiAP::wifiEventHandler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
-{
-    if (event_base == WIFI_EVENT)
-    {
-        switch (event_id)
-        {
-            case WIFI_EVENT_AP_START:
-            {
-                ESP_LOGI(m_tag.c_str(), "Iniciou Wifi AP");
-                xEventGroupSetBits(m_eventGroup, m_startedBit);
-            }
-                break;
-
-            case WIFI_EVENT_AP_STACONNECTED:
-            {
-                wifi_event_ap_staconnected_t *event_conn = static_cast<wifi_event_ap_staconnected_t *>(event_data);
-                ESP_LOGI(m_tag.c_str(), "Station " MACSTR " connected, AID=%d", MAC2STR(event_conn->mac), event_conn->aid);
-            }
-                break;
-
-            case WIFI_EVENT_AP_STADISCONNECTED:
-            {
-                wifi_event_ap_stadisconnected_t *event_disc = static_cast<wifi_event_ap_stadisconnected_t *>(event_data);
-                ESP_LOGI(m_tag.c_str(), "Station " MACSTR " disconnected, AID=%d", MAC2STR(event_disc->mac), event_disc->aid);
-            }
-                break;
-
-            default:
-                break;
-        }
-    }
-}
-
-void WiFiAP::initAP(wifi_config_t *wifiConfig)
+void WiFiAP::initSoftAP()
 {
     ESP_LOGI(m_tag.c_str(), "Initializing WiFi AP");
 
@@ -153,65 +125,33 @@ void WiFiAP::initAP(wifi_config_t *wifiConfig)
     ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
 
-    esp_netif_create_default_wifi_ap();
+    m_netifAp = esp_netif_create_default_wifi_ap();
 
-    wifiConfig->ap.authmode = WIFI_AUTH_WPA2_PSK;
+    m_wifiConfig.ap.authmode = WIFI_AUTH_WPA2_PSK;
     
-    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, wifiConfig));
+    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &m_wifiConfig));
 
-    ESP_LOGI(m_tag.c_str(), "Finished WiFi AP. SSID: %s password: %s channel: %d",
-             wifiConfig->ap.ssid, wifiConfig->ap.password, wifiConfig->ap.channel);
+    ESP_LOGI(m_tag.c_str(), "Finished WiFi Soft AP. SSID: %s password: %s channel: %d",
+             m_wifiConfig.ap.ssid, m_wifiConfig.ap.password, m_wifiConfig.ap.channel);
 }
 
 void WiFiAP::initEventHandler()
 {
     ESP_ERROR_CHECK(esp_event_loop_create_default());
 
-    ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &WiFiAP::wifiEventHandler, nullptr, nullptr));
+    ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &WiFiAP::eventHandler, nullptr, nullptr));
 }
 
-void WiFiAP::monitorTask(void *pvParameters)
+void WiFiAP::eventHandler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
 {
-    wifi_config_t *wifiConfig = static_cast<wifi_config_t*>(pvParameters);
-
-    if (wifiConfig == nullptr)
+    if ((event_base == WIFI_EVENT) && (event_id == WIFI_EVENT_AP_STACONNECTED))
     {
-        ESP_LOGE(m_tag.c_str(), "Failed to get wifi settings...");
-        vTaskDelete(nullptr);
+        wifi_event_ap_staconnected_t *event_conn = static_cast<wifi_event_ap_staconnected_t *>(event_data);
+        ESP_LOGI(m_tag.c_str(), "Station " MACSTR " connected, AID=%d", MAC2STR(event_conn->mac), event_conn->aid);
     }
-
-    m_eventGroup = xEventGroupCreate();
-
-    initEventHandler();
-    initAP(wifiConfig);
-
-    if (esp_wifi_start() != ESP_OK)
+    else if ((event_base == WIFI_EVENT) && (event_id == WIFI_EVENT_AP_STADISCONNECTED))
     {
-        ESP_LOGE(m_tag.c_str(), "WiFi start failed...");
-        vTaskDelete(nullptr);
-    }
-
-    while (true)
-    {
-        EventBits_t bits = xEventGroupWaitBits(m_eventGroup,
-                                               m_startedBit | m_connectedBit | m_failedBit,
-                                               pdFALSE,
-                                               pdFALSE,
-                                               portMAX_DELAY);
-
-        m_connected = (bits & m_connectedBit);
-
-        if (bits & m_startedBit)
-        {
-            ESP_LOGI(m_tag.c_str(), "WiFi started sucessfully...");
-            xEventGroupClearBits(m_eventGroup, m_startedBit);
-        }
-        else if (bits & m_failedBit)
-        {
-            ESP_LOGE(m_tag.c_str(), "WiFi start failed...");
-            xEventGroupClearBits(m_eventGroup, m_failedBit);
-        }
-
-        vTaskDelay(100);
+        wifi_event_ap_staconnected_t *event_conn = static_cast<wifi_event_ap_staconnected_t *>(event_data);
+        ESP_LOGI(m_tag.c_str(), "Station " MACSTR " disconnected, AID=%d", MAC2STR(event_conn->mac), event_conn->aid);
     }
 }

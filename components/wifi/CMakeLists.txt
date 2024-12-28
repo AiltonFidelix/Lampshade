@@ -1,4 +1,4 @@
-set(SOURCES wififactory.cpp wifiap.cpp)
+set(SOURCES wififactory.cpp wifiap.cpp wifista.cpp)
 
 set(COMPONENTS esp_event esp_wifi esp_netif lwip)
 
