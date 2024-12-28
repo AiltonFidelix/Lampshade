@@ -10,7 +10,7 @@
 #include "esp_event.h"
 #include "lwip/netdb.h"
 
-#include "wifi.h"
+#include "interface/wifi.h"
 
 class WiFiAP : public WiFi
 {
@@ -28,8 +28,6 @@ public:
     void setSSIDHidden(bool hidden);
 
     bool isconnected() override;
-
-    Mode mode() override;
 
 private:
     void initSoftAP();

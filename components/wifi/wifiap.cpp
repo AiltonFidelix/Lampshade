@@ -1,6 +1,6 @@
 #include "wifiap.h"
 
-std::string WiFiAP::m_tag = "WiFiAP";
+std::string WiFiAP::m_tag = "wifiap";
 
 WiFiAP::WiFiAP()
 {
@@ -107,11 +107,6 @@ void WiFiAP::setSSIDHidden(bool hidden)
 bool WiFiAP::isconnected()
 {
     return m_connected;
-}
-
-WiFi::Mode WiFiAP::mode()
-{
-    return Mode::AP;
 }
 
 void WiFiAP::initSoftAP()

@@ -1,16 +1,15 @@
 #include "main.h"
 
-#include "esp_log.h"
-#include "nvs_flash.h"
-
-#include "wififactory.h"
-#include "ledesp32.h"
-
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-
 void app_main(void)
 {
+    auto restart = [](std::string message) -> void
+    {
+        message += '\0';
+
+        ESP_LOGE("main", "%s", message.c_str());
+        esp_restart();
+    };
+
     esp_err_t ret = nvs_flash_init();
 
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) 
@@ -21,12 +20,17 @@ void app_main(void)
 
     ESP_ERROR_CHECK(ret);
 
-    WiFi *wifi = WiFiFactory::getMode(WiFi::AP);
+    WiFi *wifi = WiFiFactory::getMode(WiFiFactory::AP);
     // WiFi *wifi = WiFiFactory::getMode(WiFi::STA, "", "");
 
-    if (wifi)
+    if (wifi == nullptr)
     {
-        wifi->start();
+        restart("Failed to create wifi object, restarting...");
+    }
+
+    if (!wifi->start())
+    {
+        restart("Failed to start wifi, restarting...");
     }
 
     LedEsp32 led;

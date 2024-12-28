@@ -1,6 +1,6 @@
 #include "wifista.h"
 
-std::string WiFiSTA::m_tag = "WiFiSTA";
+std::string WiFiSTA::m_tag = "wifista";
 
 uint32_t WiFiSTA::m_connectedBit = BIT0;
 uint32_t WiFiSTA::m_failedBit = BIT1;
@@ -136,11 +136,6 @@ void WiFiSTA::setRetry(uint8_t max)
 bool WiFiSTA::isconnected()
 {
     return m_connected;
-}
-
-WiFi::Mode WiFiSTA::mode()
-{
-    return WiFi::STA;
 }
 
 void WiFiSTA::initSTA()

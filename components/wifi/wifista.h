@@ -13,7 +13,7 @@
 #include "esp_event.h"
 #include "lwip/netdb.h"
 
-#include "wifi.h"
+#include "interface/wifi.h"
 
 class WiFiSTA : public WiFi
 {
@@ -30,8 +30,6 @@ public:
     void setRetry(uint8_t max);
 
     bool isconnected() override;
-
-    Mode mode() override;
 
 private:
     void initSTA();

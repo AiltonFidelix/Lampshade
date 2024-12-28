@@ -2,17 +2,17 @@
 #include "wifiap.h"
 #include "wifista.h"
 
-WiFi *WiFiFactory::getMode(WiFi::Mode mode, std::string ssid, std::string pass)
+WiFi *WiFiFactory::getMode(WiFiFactory::Mode mode, std::string ssid, std::string pass)
 {
     switch (mode)
     {
-        case WiFi::Mode::STA:
-            return new WiFiSTA(ssid, pass);
-            break;
+        case STA:
+            static WiFiSTA wifiSTA(ssid, pass);
+            return &wifiSTA;
         
-        case WiFi::Mode::AP:
-            return new WiFiAP();
-            break;
+        case AP:
+            static WiFiAP wifiAP;
+            return &wifiAP;
     }
 
     return nullptr;
