@@ -18,11 +18,12 @@ p {
     width: 95%;
     height: 15px;
     border-radius: 5px;  
-    background: gainsboro;
+    background: white;
     outline: none;
     opacity: 0.7;
     -webkit-transition: .2s;
     transition: opacity .2s;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .slider::-webkit-slider-thumb {
@@ -49,10 +50,77 @@ p {
     text-align: center;
 }
 
+.subtitle {
+    font-size: medium;
+    color: dodgerblue;
+    text-align: center;
+}
+
 .container {
     display: flex;
     align-items: center;
     flex-direction: column;
     height: 82vh;
+    overflow-y: auto;
 }
-  
+
+ul {
+    list-style-type: none;
+    padding: 0;
+    width: 95%;
+}
+
+li {
+    background-color: white;
+    margin: 10px 0;
+    padding: 10px;
+    border-radius: 7px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+li strong {
+    color: dodgerblue;
+    padding-right: 10px;
+    
+}
+
+.signal {
+    float: right;
+    font-weight: bold;
+    color: lightblue;
+}
+
+.wifi-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+}
+
+.password-div {
+    display: none;
+    margin-top: 15px;
+}
+
+.password-input {
+    max-width: 50%;
+    height: 20px;
+    border-radius: 7px;
+    border-color: dodgerblue;
+    margin-left: 12px;
+}
+
+.show-password-btn {
+    color: dodgerblue;
+    background-color: transparent;
+    border: none;
+    font-size: 14px;
+}
+
+.submit-password-btn {
+    background-color: dodgerblue;
+    color: white;
+    border-radius: 7px;
+    height: 28px;
+    margin-left: 8px;
+}

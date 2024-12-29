@@ -14,6 +14,7 @@
 #include "lwip/netdb.h"
 
 #include "interface/wifi.h"
+#include "wificonfig.h"
 
 class WiFiSTA : public WiFi
 {

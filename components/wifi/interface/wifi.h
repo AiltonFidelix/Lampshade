@@ -3,11 +3,6 @@
 
 #include <string>
 
-#define WIFI_TASK_STACK 4096
-#define WIFI_MAX_RETRY 5
-#define WIFI_SSID_LEN 34
-#define WIFI_PASS_LEN 64
-
 class WiFi 
 {
 public:

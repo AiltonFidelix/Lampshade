@@ -21,6 +21,9 @@ public:
     virtual void turnOn() = 0;
     virtual void turnOff() = 0;
     virtual void toggle() = 0;
+
+    virtual void startBlink(uint32_t period) = 0;
+    virtual void stopBlink() = 0;
 };
 
 #endif

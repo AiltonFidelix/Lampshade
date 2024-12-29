@@ -13,14 +13,14 @@ WiFiSTA::WiFiSTA()
 {
     m_netifSta = nullptr;
     m_connected = false;
-    setRetry(5);
+    setRetry(WIFI_MAX_RETRY);
 }
 
 WiFiSTA::WiFiSTA(const std::string &ssid, const std::string &password) 
 {
     m_netifSta = nullptr;
     m_connected = false;
-    setRetry(5);
+    setRetry(WIFI_MAX_RETRY);
     setCredentials(ssid, password);
 }
 
@@ -39,6 +39,9 @@ bool WiFiSTA::start()
 
     initEventHandler();
     initSTA();
+
+    int8_t max_tx_power = 80; // 20 dBm
+    esp_wifi_set_max_tx_power(max_tx_power);
 
     if (esp_wifi_start() != ESP_OK)
     {
@@ -150,7 +153,12 @@ void WiFiSTA::initSTA()
 
     m_netifSta = esp_netif_create_default_wifi_sta();
 
-    m_wifiConfig.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
+    if (esp_netif_set_hostname(m_netifSta, WIFI_HOSTNAME) != ESP_OK)
+    {
+        ESP_LOGE(m_tag.c_str(), "Failed to set hostname as %s, keeping anyway...", WIFI_HOSTNAME);
+    }
+
+    m_wifiConfig.sta.threshold.authmode = WIFI_AUTH_WPA_WPA2_PSK;
 
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &m_wifiConfig));
 

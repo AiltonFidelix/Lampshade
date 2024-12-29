@@ -4,10 +4,18 @@
 #include "interface/led.h"
 #include "driver/gpio.h"
 #include "driver/ledc.h"
-#include <iostream>
+
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/event_groups.h"
 
 class LedEsp32 : public Led
 {
+    using BlinkSettings = struct {
+        Led *led;
+        uint32_t period;
+    };
+
 public:
     LedEsp32();
     
@@ -25,11 +33,16 @@ public:
     void turnOff() override;
     void toggle() override;
 
+    void startBlink(uint32_t period) override;
+    void stopBlink() override;
+
 private:
     bool configureOutputMode();
     bool configurePWMMode();
 
     uint32_t calcDuty(uint8_t duty);
+
+    static void blinkTask(void *pvParameters);
 
 private:
     gpio_num_t m_pin;
@@ -39,6 +52,9 @@ private:
     ledc_timer_t m_ledTimer;
     ledc_timer_bit_t m_ledTimerResolution;
     uint32_t m_ledTimerFreq;
+
+    TaskHandle_t m_taskHandle;
+    BlinkSettings m_blink;
 };
 
 #endif

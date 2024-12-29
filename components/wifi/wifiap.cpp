@@ -122,6 +122,11 @@ void WiFiAP::initSoftAP()
 
     m_netifAp = esp_netif_create_default_wifi_ap();
 
+    if (esp_netif_set_hostname(m_netifAp, WIFI_HOSTNAME) != ESP_OK)
+    {
+        ESP_LOGE(m_tag.c_str(), "Failed to set hostname as %s, keeping anyway...", WIFI_HOSTNAME);
+    }
+
     m_wifiConfig.ap.authmode = WIFI_AUTH_WPA2_PSK;
     
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &m_wifiConfig));

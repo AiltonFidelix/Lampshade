@@ -3,6 +3,8 @@
 
 LedEsp32::LedEsp32()
 {
+    m_taskHandle = nullptr;
+
     m_pinMode = Output;
 
     // PWM default settings
@@ -69,6 +71,24 @@ void LedEsp32::toggle()
     gpio_set_level(m_pin, level);
 }
 
+void LedEsp32::startBlink(uint32_t period)
+{
+    m_blink.led = this;
+    m_blink.period = period;
+
+    xTaskCreate(LedEsp32::blinkTask, "blinkTask", configMINIMAL_STACK_SIZE, &m_blink, 1, &m_taskHandle);
+}
+
+void LedEsp32::stopBlink()
+{
+    if (m_taskHandle)
+    {
+        vTaskDelete(m_taskHandle);
+
+        m_taskHandle = nullptr;
+    }
+}
+
 bool LedEsp32::configureOutputMode()
 {
     if (gpio_set_direction(m_pin, GPIO_MODE_INPUT_OUTPUT) != ESP_OK)
@@ -131,4 +151,21 @@ uint32_t LedEsp32::calcDuty(uint8_t duty)
     float multiplier = static_cast<float>(duty / 100.0);
 
     return static_cast<uint32_t>(range * multiplier);
+}
+
+void LedEsp32::blinkTask(void *pvParameters)
+{
+    BlinkSettings *blink = static_cast<BlinkSettings*>(pvParameters);
+
+    if (blink == nullptr)
+    {
+        vTaskDelete(nullptr);
+    }
+
+    while (true)
+    {
+        blink->led->toggle();
+
+        vTaskDelay(pdMS_TO_TICKS(blink->period));
+    }
 }
