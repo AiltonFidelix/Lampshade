@@ -38,6 +38,8 @@ bool WiFiAP::start()
         return false;
     }
 
+    // scan();
+
     m_connected = true;
 
     return true;
@@ -118,7 +120,7 @@ void WiFiAP::initSoftAP()
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
     ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
-    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
 
     m_netifAp = esp_netif_create_default_wifi_ap();
 
@@ -141,6 +143,31 @@ void WiFiAP::initEventHandler()
 
     ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &WiFiAP::eventHandler, nullptr, nullptr));
 }
+
+// void WiFiAP::scan()
+// {
+//     wifi_scan_config_t scan_config = {
+//         .ssid = 0,
+//         .bssid = 0,
+//         .channel = 0,
+//         .show_hidden = true};
+
+//     ESP_ERROR_CHECK(esp_wifi_scan_start(&scan_config, true));
+
+//     wifi_ap_record_t wifi_records[WIFI_SCAN_MAX_AP];
+
+//     uint16_t max_records = WIFI_SCAN_MAX_AP;
+//     ESP_ERROR_CHECK(esp_wifi_scan_get_ap_records(&max_records, wifi_records));
+
+//     printf("Number of Access Points Found: %d\n", max_records);
+//     printf("\n");
+//     printf("               SSID              | Channel | RSSI \n");
+//     printf("***************************************************************\n");
+
+//     for (int i = 0; i < max_records; i++)
+//         printf("%32s | %7d | %4d\n", (char *)wifi_records[i].ssid, wifi_records[i].primary, wifi_records[i].rssi);
+//     printf("***************************************************************\n");
+// }
 
 void WiFiAP::eventHandler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
 {

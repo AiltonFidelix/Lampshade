@@ -1,0 +1,8 @@
+#ifndef __HTTPCONFIG_H
+#define __HTTPCONFIG_H
+
+#define HTTP_SERVER_TASK_STACK 4096
+#define HTTP_SERVER_TASK_PRIORITY 3
+#define HTTP_SERVER_SCAN_MAX_AP 10
+
+#endif

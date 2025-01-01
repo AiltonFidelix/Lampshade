@@ -1,5 +1,5 @@
-#ifndef __MANAGERSERVER_H
-#define __MANAGERSERVER_H
+#ifndef __LAMPSHADESERVER_H
+#define __LAMPSHADESERVER_H
 
 #include "interface/httpserver.h"
 
@@ -8,11 +8,11 @@
 
 #include <string>
 
-class ManagerServer : public HttpServer
+class LampshadeServer : public HttpServer
 {
 public:
-    ManagerServer();
-    ~ManagerServer();
+    LampshadeServer();
+    ~LampshadeServer();
 
     bool start() override;
     void stop() override;
@@ -27,8 +27,6 @@ private:
     static esp_err_t jqueryHandler(httpd_req_t *req);
     static esp_err_t cssHandler(httpd_req_t *req);
     static esp_err_t faviconHandler(httpd_req_t *req);
-    static esp_err_t networksHandler(httpd_req_t *req);
-    static esp_err_t connectHandler(httpd_req_t *req);
 
 private:
     static std::string m_tag;
