@@ -37,7 +37,7 @@ bool WiFiSTA::start()
 
     m_eventGroup = xEventGroupCreate();
 
-    initEventHandler();
+    initNetif();
     initSTA();
 
     int8_t max_tx_power = 80; // 20 dBm
@@ -64,6 +64,8 @@ bool WiFiSTA::start()
         {
             esp_netif_set_default_netif(m_netifSta);
         }
+
+        initMDNS();
 
         return true;
     } 
@@ -151,26 +153,29 @@ void WiFiSTA::initSTA()
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
 
-    m_netifSta = esp_netif_create_default_wifi_sta();
-
-    if (esp_netif_set_hostname(m_netifSta, WIFI_HOSTNAME) != ESP_OK)
-    {
-        ESP_LOGE(m_tag.c_str(), "Failed to set hostname as %s, keeping anyway...", WIFI_HOSTNAME);
-    }
-
-    m_wifiConfig.sta.threshold.authmode = WIFI_AUTH_WPA_WPA2_PSK;
+    m_wifiConfig.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
 
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &m_wifiConfig));
 
     ESP_LOGI(m_tag.c_str(), "Finished WiFi STA");
 }
 
-void WiFiSTA::initEventHandler()
+void WiFiSTA::initNetif()
 {
     ESP_ERROR_CHECK(esp_event_loop_create_default());
 
+    m_netifSta = esp_netif_create_default_wifi_sta();
+
     ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &WiFiSTA::eventHandler, nullptr, nullptr));
     ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &WiFiSTA::eventHandler, nullptr, nullptr));
+}
+
+void WiFiSTA::initMDNS()
+{
+    ESP_ERROR_CHECK(mdns_init());
+    ESP_ERROR_CHECK(mdns_hostname_set(WIFI_HOSTNAME));
+    ESP_ERROR_CHECK(mdns_service_add(WIFI_HOSTNAME, "_http", "_tcp", 80, NULL, 0));
+    ESP_LOGI(m_tag.c_str(), "mDNS initialized with hostname: %s.local", WIFI_HOSTNAME);
 }
 
 void WiFiSTA::eventHandler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data)

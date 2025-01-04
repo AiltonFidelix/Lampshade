@@ -12,6 +12,7 @@
 #include "esp_mac.h"
 #include "esp_event.h"
 #include "lwip/netdb.h"
+#include "mdns.h"
 
 #include "interface/wifi.h"
 #include "wificonfig.h"
@@ -34,7 +35,8 @@ public:
 
 private:
     void initSTA();
-    void initEventHandler();
+    void initNetif();
+    void initMDNS();
     static void eventHandler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
 
 private:

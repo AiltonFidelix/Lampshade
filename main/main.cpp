@@ -1,6 +1,7 @@
 #include "main.h"
 #include "storage.h"
 #include "managerserver.h"
+#include "lampshadeserver.h"
 
 #define WAIT_FOREVER while (true) { vTaskDelay(pdMS_TO_TICKS(10)); }
 
@@ -28,8 +29,9 @@ void app_main(void)
 
     LedEsp32 led;
     led.setPin(GPIO_NUM_8);
-    led.setMode(Led::Output);
+    led.setMode(Led::PWM);
     led.configure();
+    led.startBlink(80);
 
     WiFi *wifi = WiFiFactory::getMode(WiFiFactory::AP);
     // WiFi *wifi = WiFiFactory::getMode(WiFiFactory::STA, "", "");
@@ -44,6 +46,9 @@ void app_main(void)
         restart("Failed to start wifi, restarting...");
     }
 
+    led.stopBlink();
+
+    // LampshadeServer server;
     ManagerServer server;
     server.setLed(&led);
     server.start();
