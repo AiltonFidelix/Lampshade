@@ -1,3 +1,5 @@
+let timeout;
+
 $(document).ready(function () {
 
     initSlider();
@@ -8,16 +10,33 @@ $(document).ready(function () {
 });
 
 function initSlider() {
+    $.getJSON("/getduty.json", function (data) {
 
-    // TODO: get the current value from MCU
-    let current = 0;
+        let current = data.duty;
 
-    $('#sliderInput').val(current);
-    $('#sliderValue').text(`${current}%`);
+        $('#sliderInput').val(current);
+        $('#sliderValue').text(`${current}%`);
+    });
 }
 
 function handleSlider(value) {
     $('#sliderValue').text(`${value}%`);
 
-    // Set the new value in the MCU
+    const json = {
+        duty: Number(value)
+    };
+
+    clearTimeout(timeout);
+
+    timeout = setTimeout(() => {
+        $.ajax({
+            url: "/setduty.json",
+            dataType: "json",
+            method: "POST",
+            cache: false,
+            headers: { "data": JSON.stringify(json) },
+            data: ""
+        });
+    
+    }, 1000);
 }

@@ -27,6 +27,8 @@ private:
     static esp_err_t jqueryHandler(httpd_req_t *req);
     static esp_err_t cssHandler(httpd_req_t *req);
     static esp_err_t faviconHandler(httpd_req_t *req);
+    static esp_err_t setDutyHandler(httpd_req_t *req);
+    static esp_err_t getDutyHandler(httpd_req_t *req);
 
 private:
     static std::string m_tag;

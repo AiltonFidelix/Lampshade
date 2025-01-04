@@ -12,6 +12,7 @@ public:
     virtual void setMode(PinMode mode) = 0;
 
     virtual void setDuty(uint8_t duty) = 0;
+    virtual uint8_t duty() = 0;
 
     virtual bool configure() = 0;
 
