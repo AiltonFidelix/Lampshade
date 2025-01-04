@@ -23,6 +23,7 @@ public:
     void setMode(PinMode mode) override;
 
     void setDuty(uint8_t duty) override;
+    uint8_t duty() override;
 
     bool configure() override;
 
@@ -52,6 +53,8 @@ private:
     ledc_timer_t m_ledTimer;
     ledc_timer_bit_t m_ledTimerResolution;
     uint32_t m_ledTimerFreq;
+
+    uint8_t m_duty;
 
     TaskHandle_t m_taskHandle;
     BlinkSettings m_blink;
