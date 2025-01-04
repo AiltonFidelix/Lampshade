@@ -49,7 +49,7 @@ bool ManagerServer::start()
 
     if (m_led)
     {
-        m_led->startBlink(80);
+        m_led->startBlink(1000);
     }
 
     return true;
