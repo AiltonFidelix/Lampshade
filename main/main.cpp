@@ -1,4 +1,5 @@
 #include "main.h"
+#include "storage.h"
 #include "managerserver.h"
 
 #define WAIT_FOREVER while (true) { vTaskDelay(pdMS_TO_TICKS(10)); }
@@ -22,6 +23,8 @@ void app_main(void)
     }
 
     ESP_ERROR_CHECK(ret);
+
+    Storage storage;
 
     LedEsp32 led;
     led.setPin(GPIO_NUM_8);

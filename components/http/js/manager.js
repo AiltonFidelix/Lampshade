@@ -28,7 +28,7 @@ function displayWiFiNetworks() {
     
             listItem.innerHTML = `
                 <div id="wifiitem-${id}" class="wifi-item">
-                    <button id="btnWiFi-${id}" class="show-password-btn"><strong>${network.name}</strong></button>
+                    <button id="btnWiFi-${id}" class="show-password-btn"><strong>${network.ssid}</strong></button>
                     <span class="signal">${network.rssi}</span>
                 </div>
                 <div id="divPass-${id}" class="password-div">
@@ -58,15 +58,18 @@ function togglePasswordInput(id) {
 }
 
 function submitCredentials(id) {
-    const ssid = $(`#btnWiFi-${id}`).text();
-    const pass = $(`#inputPass-${id}`).val();
+    
+    const json = {
+        ssid: $(`#btnWiFi-${id}`).text(),
+        pass: $(`#inputPass-${id}`).val()
+    };
 
     $.ajax({
         url: "/connect.json",
         dataType: "json",
         method: "POST",
         cache: false,
-        headers: { "ssid": ssid, "pass": pass },
+        headers: { "data": JSON.stringify(json) },
         data: ""
     });
 

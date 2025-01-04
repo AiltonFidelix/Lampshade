@@ -6,6 +6,6 @@
 #define WIFI_SSID_LEN 34
 #define WIFI_PASS_LEN 64
 #define WIFI_SCAN_MAX_AP 20
-#define WIFI_HOSTNAME "lampshade.device"
+#define WIFI_HOSTNAME "lampshade"
 
 #endif

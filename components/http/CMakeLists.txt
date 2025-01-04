@@ -10,6 +10,6 @@ set(EMBEDDED
 
 set(SOURCES managerserver.cpp lampshadeserver.cpp)
 
-set(COMPONENTS esp_http_server esp_wifi)
+set(COMPONENTS led json storage esp_http_server esp_wifi)
 
 idf_component_register(SRCS ${SOURCES} INCLUDE_DIRS "." REQUIRES ${COMPONENTS} EMBED_FILES ${EMBEDDED})

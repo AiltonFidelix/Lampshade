@@ -29,7 +29,7 @@ bool WiFiAP::start()
 
     esp_log_level_set("wifi", ESP_LOG_NONE);
 
-    initEventHandler();
+    initNetif();
     initSoftAP();
 
     if (esp_wifi_start() != ESP_OK)
@@ -38,7 +38,7 @@ bool WiFiAP::start()
         return false;
     }
 
-    // scan();
+    initMDNS();
 
     m_connected = true;
 
@@ -115,19 +115,10 @@ void WiFiAP::initSoftAP()
 {
     ESP_LOGI(m_tag.c_str(), "Initializing WiFi AP");
 
-    ESP_ERROR_CHECK(esp_netif_init());
-
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
     ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
-
-    m_netifAp = esp_netif_create_default_wifi_ap();
-
-    if (esp_netif_set_hostname(m_netifAp, WIFI_HOSTNAME) != ESP_OK)
-    {
-        ESP_LOGE(m_tag.c_str(), "Failed to set hostname as %s, keeping anyway...", WIFI_HOSTNAME);
-    }
 
     m_wifiConfig.ap.authmode = WIFI_AUTH_WPA2_PSK;
     
@@ -137,48 +128,34 @@ void WiFiAP::initSoftAP()
              m_wifiConfig.ap.ssid, m_wifiConfig.ap.password, m_wifiConfig.ap.channel);
 }
 
-void WiFiAP::initEventHandler()
+void WiFiAP::initNetif()
 {
+    ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
+
+    m_netifAp = esp_netif_create_default_wifi_ap();
 
     ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &WiFiAP::eventHandler, nullptr, nullptr));
 }
 
-// void WiFiAP::scan()
-// {
-//     wifi_scan_config_t scan_config = {
-//         .ssid = 0,
-//         .bssid = 0,
-//         .channel = 0,
-//         .show_hidden = true};
-
-//     ESP_ERROR_CHECK(esp_wifi_scan_start(&scan_config, true));
-
-//     wifi_ap_record_t wifi_records[WIFI_SCAN_MAX_AP];
-
-//     uint16_t max_records = WIFI_SCAN_MAX_AP;
-//     ESP_ERROR_CHECK(esp_wifi_scan_get_ap_records(&max_records, wifi_records));
-
-//     printf("Number of Access Points Found: %d\n", max_records);
-//     printf("\n");
-//     printf("               SSID              | Channel | RSSI \n");
-//     printf("***************************************************************\n");
-
-//     for (int i = 0; i < max_records; i++)
-//         printf("%32s | %7d | %4d\n", (char *)wifi_records[i].ssid, wifi_records[i].primary, wifi_records[i].rssi);
-//     printf("***************************************************************\n");
-// }
+void WiFiAP::initMDNS()
+{
+    ESP_ERROR_CHECK(mdns_init());
+    ESP_ERROR_CHECK(mdns_hostname_set(WIFI_HOSTNAME));
+    ESP_ERROR_CHECK(mdns_service_add(WIFI_HOSTNAME, "_http", "_tcp", 80, NULL, 0));
+    ESP_LOGI(m_tag.c_str(), "mDNS initialized with hostname: %s.local", WIFI_HOSTNAME);
+}
 
 void WiFiAP::eventHandler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
 {
     if ((event_base == WIFI_EVENT) && (event_id == WIFI_EVENT_AP_STACONNECTED))
     {
-        wifi_event_ap_staconnected_t *event_conn = static_cast<wifi_event_ap_staconnected_t *>(event_data);
+        wifi_event_ap_staconnected_t *event_conn = static_cast<wifi_event_ap_staconnected_t*>(event_data);
         ESP_LOGI(m_tag.c_str(), "Station " MACSTR " connected, AID=%d", MAC2STR(event_conn->mac), event_conn->aid);
     }
     else if ((event_base == WIFI_EVENT) && (event_id == WIFI_EVENT_AP_STADISCONNECTED))
     {
-        wifi_event_ap_staconnected_t *event_conn = static_cast<wifi_event_ap_staconnected_t *>(event_data);
+        wifi_event_ap_staconnected_t *event_conn = static_cast<wifi_event_ap_staconnected_t*>(event_data);
         ESP_LOGI(m_tag.c_str(), "Station " MACSTR " disconnected, AID=%d", MAC2STR(event_conn->mac), event_conn->aid);
     }
 }

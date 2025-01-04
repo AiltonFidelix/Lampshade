@@ -2,3 +2,4 @@
 *.old
 *.json
 build
+managed_components

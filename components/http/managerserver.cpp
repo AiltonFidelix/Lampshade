@@ -1,11 +1,9 @@
 #include "managerserver.h"
 #include "httpconfig.h"
+#include "storage.h"
 
+#include "cJSON.h"
 #include "esp_wifi.h"
-#include "utils/json.h"
-
-#include <iostream>
-#include <format>
 
 extern const uint8_t index_min_html_start[] asm("_binary_manager_min_html_start");
 extern const uint8_t index_min_html_end[] asm("_binary_manager_min_html_end");
@@ -33,15 +31,20 @@ ManagerServer::ManagerServer()
 
 ManagerServer::~ManagerServer()
 {
+    stop();
 }
 
 bool ManagerServer::start()
 {
     ESP_LOGI(m_tag.c_str(), "Initializing manager server...");
 
+    m_serverHandle = serverConfigure();
+
     if (m_serverHandle == nullptr)
     {
-        m_serverHandle = serverConfigure();
+        ESP_LOGE(m_tag.c_str(), "Manager server initialization failed...");
+
+        return false;
     }
 
     if (m_led)
@@ -57,6 +60,11 @@ void ManagerServer::stop()
     if (m_led)
     {
         m_led->stopBlink();
+    }
+    
+    if (m_serverHandle)
+    {
+        httpd_stop(m_serverHandle);
     }
 }
 
@@ -84,7 +92,9 @@ httpd_handle_t ManagerServer::serverConfigure()
     config.recv_wait_timeout = 10;
     config.send_wait_timeout = 10;
 
-    if (httpd_start(&m_serverHandle, &config) == ESP_OK)
+    httpd_handle_t handle;
+
+    if (httpd_start(&handle, &config) == ESP_OK)
     {
         ESP_LOGI(m_tag.c_str(), "Registering URI handlers...");
 
@@ -95,7 +105,7 @@ httpd_handle_t ManagerServer::serverConfigure()
             .user_ctx = nullptr
         };
 
-        httpd_register_uri_handler(m_serverHandle, &index);
+        httpd_register_uri_handler(handle, &index);
 
         httpd_uri_t app_js = {
             .uri = "/js/manager.min.js",
@@ -104,7 +114,7 @@ httpd_handle_t ManagerServer::serverConfigure()
             .user_ctx = nullptr
         };
 
-        httpd_register_uri_handler(m_serverHandle, &app_js);
+        httpd_register_uri_handler(handle, &app_js);
 
         httpd_uri_t jquery = {
             .uri = "/js/jquery.min.js",
@@ -113,7 +123,7 @@ httpd_handle_t ManagerServer::serverConfigure()
             .user_ctx = nullptr
         };
 
-        httpd_register_uri_handler(m_serverHandle, &jquery);
+        httpd_register_uri_handler(handle, &jquery);
 
         httpd_uri_t app_css = {
             .uri = "/css/app.min.css",
@@ -122,7 +132,7 @@ httpd_handle_t ManagerServer::serverConfigure()
             .user_ctx = nullptr
         };
 
-        httpd_register_uri_handler(m_serverHandle, &app_css);
+        httpd_register_uri_handler(handle, &app_css);
 
         httpd_uri_t favicon = {
             .uri = "/assets/favicon.ico",
@@ -131,16 +141,16 @@ httpd_handle_t ManagerServer::serverConfigure()
             .user_ctx = nullptr
         };
 
-        httpd_register_uri_handler(m_serverHandle, &favicon);
+        httpd_register_uri_handler(handle, &favicon);
 
         httpd_uri_t networks = {
-            .uri = "/wifiNetworks.json",
+            .uri = "/networks.json",
             .method = HTTP_GET,
             .handler = ManagerServer::networksHandler,
             .user_ctx = nullptr
         };
 
-        httpd_register_uri_handler(m_serverHandle, &networks);
+        httpd_register_uri_handler(handle, &networks);
 
         httpd_uri_t connect = {
             .uri = "/connect.json",
@@ -149,9 +159,9 @@ httpd_handle_t ManagerServer::serverConfigure()
             .user_ctx = nullptr
         };
 
-        httpd_register_uri_handler(m_serverHandle, &connect);
+        httpd_register_uri_handler(handle, &connect);
 
-        return m_serverHandle;
+        return handle;
     }
 
     return nullptr;
@@ -209,14 +219,14 @@ esp_err_t ManagerServer::faviconHandler(httpd_req_t *req)
 
 esp_err_t ManagerServer::networksHandler(httpd_req_t *req)
 {
-    ESP_LOGI(m_tag.c_str(), "/wifiNetworks.json");
+    ESP_LOGI(m_tag.c_str(), "networks.json requested");
 
-    wifi_scan_config_t scan_config = {
-        .ssid = 0,
-        .bssid = 0,
-        .channel = 0,
-        .show_hidden = true
-    };
+    wifi_scan_config_t scan_config;
+
+    scan_config.ssid = nullptr;
+    scan_config.bssid = nullptr;
+    scan_config.channel = 0;
+    scan_config.show_hidden = true;
 
     ESP_ERROR_CHECK(esp_wifi_scan_start(&scan_config, true));
 
@@ -225,64 +235,106 @@ esp_err_t ManagerServer::networksHandler(httpd_req_t *req)
     uint16_t max_records = HTTP_SERVER_SCAN_MAX_AP;
     ESP_ERROR_CHECK(esp_wifi_scan_get_ap_records(&max_records, wifi_records));
 
-    std::string json;
-    json += "{\"networks\":[";
+    cJSON *root = cJSON_CreateObject();
+    cJSON *networks = cJSON_CreateArray();
+
+    if ((root == NULL) || (networks == NULL))
+    {
+        ESP_LOGE(m_tag.c_str(), "Failed to allocate memory for the JSON object");
+        return ESP_FAIL;
+    }
 
     for (int i = 0; i < max_records; i++)
     {
-        char *ssidptr = (char*)wifi_records[i].ssid;
+        char *ssidptr = reinterpret_cast<char*>(wifi_records[i].ssid);
 
         if (strlen(ssidptr) == 0)
         {
             continue;
         }
 
-        if (i > 0)
+        cJSON *network = cJSON_CreateObject();
+
+        if (network == NULL)
         {
-            json += ",";
+            cJSON_Delete(root);
+            ESP_LOGE(m_tag.c_str(), "Failed to allocate memory for the JSON object");
+            return ESP_FAIL;
         }
 
-        json += "{";
-        json += std::format("\"name\": \"{}\", \"rssi\": \"{}\"", ssidptr, wifi_records[i].rssi);
-        json += "}";
-
+        cJSON_AddStringToObject(network, "ssid", ssidptr);
+        cJSON_AddNumberToObject(network, "rssi", wifi_records[i].rssi);
+        cJSON_AddItemToArray(networks, network);
     }
 
-    json += "]}";
+    cJSON_AddItemToObject(root, "networks", networks);
+
+    char *json_string = cJSON_PrintUnformatted(root);
 
     httpd_resp_set_type(req, "application/json");
-    httpd_resp_send(req, json.c_str(), json.size());
+    httpd_resp_send(req, json_string, HTTPD_RESP_USE_STRLEN);
+
+    free(json_string);
+    cJSON_Delete(root);
 
     return ESP_OK;
 }
 
 esp_err_t ManagerServer::connectHandler(httpd_req_t *req)
 {
-    return esp_err_t();
-}
-
-esp_err_t ManagerServer::connectHandler(httpd_req_t *req)
-{
     ESP_LOGI(m_tag.c_str(), "connect.json requested");
 
-    // TODO: get the values
+    std::string json_str, ssid, pass;
 
-    // std::string data;
-    // size_t post_len = httpd_req_get_hdr_value_len(req, "data") + 1;
+    size_t json_len = httpd_req_get_hdr_value_len(req, "data") + 1;
 
-    // if (post_len > 1)
-    // {
-    //     data.reserve(post_len);
+    if (json_len > 1)
+    {
+        json_str.reserve(json_len);
 
-    //     if (httpd_req_get_hdr_value_str(req, "data", data.data(), post_len) == ESP_OK)
-    //     {
-    //         ESP_LOGI(m_tag.c_str(), "JSON raw: %s", data.c_str());
-    //     }
-    //     else 
-    //     {
-    //         return ESP_FAIL;
-    //     }
-    // }
+        if (httpd_req_get_hdr_value_str(req, "data", json_str.data(), json_len) != ESP_OK)
+        {
+            ESP_LOGE(m_tag.c_str(), "Failed to get JSON object");
+            return ESP_FAIL;
+        }
+    }
+
+    cJSON *json = cJSON_Parse(json_str.c_str());
+
+    if (json == NULL) 
+    {
+        ESP_LOGE(m_tag.c_str(), "Error parsing JSON");
+        return ESP_FAIL;
+    }
+
+    cJSON *ssidObj = cJSON_GetObjectItem(json, "ssid");
+
+    if (cJSON_IsString(ssidObj) && (ssidObj->valuestring != NULL)) 
+    {
+        ssid = ssidObj->valuestring;
+    }
+
+    cJSON *passObj = cJSON_GetObjectItem(json, "pass");
+
+    if (cJSON_IsString(passObj) && (passObj->valuestring != NULL)) 
+    {
+        pass = passObj->valuestring;
+    }
+
+    cJSON_Delete(json);
+
+    if (ssid.empty() || pass.empty())
+    {
+        ESP_LOGE(m_tag.c_str(), "Failed to obtain SSID or password");
+        return ESP_FAIL;
+    }
+
+    Storage storage;
+    storage.setWiFiMode(WiFiFactory::STA);
+    storage.setWiFiSSID(ssid);
+    storage.setWiFiPassword(pass);
+
+    esp_restart();
 
     return ESP_OK;
 }
