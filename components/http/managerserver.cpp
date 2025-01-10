@@ -1,6 +1,6 @@
 #include "managerserver.h"
 #include "httpconfig.h"
-#include "storage.h"
+#include "wifistorage.h"
 
 #include "cJSON.h"
 #include "esp_wifi.h"
@@ -329,10 +329,12 @@ esp_err_t ManagerServer::connectHandler(httpd_req_t *req)
         return ESP_FAIL;
     }
 
-    Storage storage;
-    storage.setWiFiMode(WiFiFactory::STA);
-    storage.setWiFiSSID(ssid);
-    storage.setWiFiPassword(pass);
+    WiFiStorage storage;
+    storage.setMode(1);
+    storage.setSSID(ssid);
+    storage.setPassword(pass);
+    storage.commit();
+    storage.close();
 
     esp_restart();
 

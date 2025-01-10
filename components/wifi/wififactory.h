@@ -11,7 +11,7 @@ public:
     WiFiFactory() = default;
     ~WiFiFactory() = default;
 
-    static WiFi *getMode(Mode mode, std::string ssid = "", std::string pass = "");
+    static WiFi *getMode(Mode mode, const std::string &ssid, const std::string &pass);
 };
 
 #endif

@@ -8,7 +8,7 @@ set(EMBEDDED
     js/jquery.min.js
 )
 
-set(SOURCES managerserver.cpp lampshadeserver.cpp)
+set(SOURCES managerserver.cpp lampshadeserver.cpp serverfactory.cpp)
 
 set(COMPONENTS led json storage esp_http_server esp_wifi)
 

@@ -40,9 +40,6 @@ bool WiFiSTA::start()
     initNetif();
     initSTA();
 
-    int8_t max_tx_power = 80; // 20 dBm
-    esp_wifi_set_max_tx_power(max_tx_power);
-
     if (esp_wifi_start() != ESP_OK)
     {
         ESP_LOGE(m_tag.c_str(), "WiFi start failed...");
@@ -147,8 +144,6 @@ void WiFiSTA::initSTA()
 {
     ESP_LOGI(m_tag.c_str(), "Initializing WiFi STA");
 
-    ESP_ERROR_CHECK(esp_netif_init());
-
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
@@ -162,6 +157,7 @@ void WiFiSTA::initSTA()
 
 void WiFiSTA::initNetif()
 {
+    ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
 
     m_netifSta = esp_netif_create_default_wifi_sta();
@@ -182,6 +178,10 @@ void WiFiSTA::eventHandler(void *arg, esp_event_base_t event_base, int32_t event
 {
     if ((event_base == WIFI_EVENT) && (event_id == WIFI_EVENT_STA_START)) 
     {
+        // int8_t max_tx_power = 80; // 20 dBm
+        // int8_t max_tx_power = 60; // 15 dBm
+        // ESP_ERROR_CHECK(esp_wifi_set_max_tx_power(max_tx_power));
+
         esp_wifi_connect();
 
         ESP_LOGI(m_tag.c_str(), "Station started!");

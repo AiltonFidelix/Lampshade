@@ -5,6 +5,8 @@
 #include "nvs_flash.h"
 
 #include "wififactory.h"
+#include "wifistorage.h"
+#include "serverfactory.h"
 #include "ledesp32.h"
 
 #include "freertos/FreeRTOS.h"

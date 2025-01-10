@@ -239,7 +239,6 @@ esp_err_t LampshadeServer::setDutyHandler(httpd_req_t *req)
     if (cJSON_IsNumber(duty)) 
     {
         m_led->setDuty(duty->valueint);
-        ESP_LOGI(m_tag.c_str(), "New duty %d", duty->valueint);
     }
 
     cJSON_Delete(json);
