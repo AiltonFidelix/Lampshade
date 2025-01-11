@@ -36,8 +36,6 @@ void app_main(void)
     std::string ssid = storage.getSSID();
     std::string pass = storage.getPassword();
 
-    // ESP_LOGI(tag.c_str(), "SSID %s, Pass %s", ssid.c_str(), pass.c_str());
-
     LedEsp32 led;
     led.setPin(GPIO_NUM_8);
     led.setMode(Led::PWM);
