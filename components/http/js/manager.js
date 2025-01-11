@@ -2,6 +2,10 @@ $(document).ready(function () {
     displayWiFiNetworks();
 });
 
+$(document).on("click","#btnScan", function () {
+    displayWiFiNetworks();
+});
+
 $(document).on("click",".wifi-item", function () {
     const id = $(this).attr("id").split("-")[1];
     togglePasswordInput(id);
@@ -14,33 +18,44 @@ $(document).on("click",".submit-password-btn", function () {
 
 function displayWiFiNetworks() {
 
-    $.getJSON("/networks.json", function (data) {
-        const subtitle = document.getElementById("subtitle");
-        subtitle.innerText = "Available Wi-Fi Networks";
+    $("#subtitle").text("Loading Wi-Fi networks...");
+    $("#btnScan").hide();
+    $("#wifiList").empty();
 
+    $.getJSON("/networks.json", function (data) {
         const wifiListElement = document.getElementById("wifiList");
 
-        let id = 0;
         let wifiNetworks = data.networks;
+        
+        if (wifiNetworks.length > 0) {
+            let id = 0;
 
-        wifiNetworks.forEach(network => {
-            const listItem = document.createElement("li");
-    
-            listItem.innerHTML = `
-                <div id="wifiitem-${id}" class="wifi-item">
-                    <button id="btnWiFi-${id}" class="show-password-btn"><strong>${network.ssid}</strong></button>
-                    <span class="signal">${network.rssi}</span>
-                </div>
-                <div id="divPass-${id}" class="password-div">
-                    <input id="inputPass-${id}" class="password-input" type="password" placeholder="Enter WiFi password" />
-                    <button id="btnConnect-${id}" class="submit-password-btn">Connect</button>
-                </div>
-            `;
-    
-            id++;
-    
-            wifiListElement.appendChild(listItem);
-        });
+            $("#subtitle").text("Available Wi-Fi networks");
+
+            wifiNetworks.forEach(network => {
+                const listItem = document.createElement("li");
+        
+                listItem.innerHTML = `
+                    <div id="wifiitem-${id}" class="wifi-item">
+                        <button id="btnWiFi-${id}" class="show-password-btn"><strong>${network.ssid}</strong></button>
+                        <span class="signal">${network.rssi}</span>
+                    </div>
+                    <div id="divPass-${id}" class="password-div">
+                        <input id="inputPass-${id}" class="password-input" type="password" placeholder="Enter WiFi password" />
+                        <button id="btnConnect-${id}" class="submit-password-btn">Connect</button>
+                    </div>
+                `;
+        
+                id++;
+        
+                wifiListElement.appendChild(listItem);
+            });
+        }
+        else {
+            $("#subtitle").text("No one network was found!");
+        }
+
+        $("#btnScan").show();
     });
 }
 
