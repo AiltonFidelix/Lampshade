@@ -56,8 +56,7 @@ The image below is how the lampshade page looks like:
 **Note:** To indicate that the device is connected into the network, the led stops blinking and turn on.
 
 ### Author
----
 
 Create by Ailton Fidelix
 
-[![Linkedin Badge](https://img.shields.io/badge/-Ailton-blue?style=flat-square&logo=Linkedin&logoColor=white&link=https://www.linkedin.com/in/ailtonfidelix/)](https://www.linkedin.com/in/ailton-fidelix-9603b31b7/)
+[![Linkedin Badge](https://img.shields.io/badge/-Linkedin-blue?style=flat-square&logo=Linkedin&logoColor=white&link=https://www.linkedin.com/in/ailtonfidelix/)](https://www.linkedin.com/in/ailton-fidelix-9603b31b7/)
