@@ -37,7 +37,7 @@ void app_main(void)
     std::string pass = storage.getPassword();
 
     LedEsp32 led;
-    led.setPin(GPIO_NUM_8);
+    led.setPin(GPIO_NUM_2);
     led.setMode(Led::PWM);
     led.configure();
     led.startBlink(80);

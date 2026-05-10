@@ -228,6 +228,8 @@ esp_err_t ManagerServer::networksHandler(httpd_req_t *req)
     scan_config.channel = 0;
     scan_config.show_hidden = true;
 
+    ESP_LOGI(m_tag.c_str(), "Scanning networks available...");
+
     ESP_ERROR_CHECK(esp_wifi_scan_start(&scan_config, true));
 
     wifi_ap_record_t wifi_records[HTTP_SERVER_SCAN_MAX_AP];
@@ -254,6 +256,8 @@ esp_err_t ManagerServer::networksHandler(httpd_req_t *req)
         }
 
         cJSON *network = cJSON_CreateObject();
+
+        ESP_LOGI(m_tag.c_str(), "Network [%s] found", ssidptr);
 
         if (network == NULL)
         {
